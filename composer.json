@@ -1,0 +1,21 @@
+{
+    "name": "alanrogers/imgproxy-php-client",
+    "description": "A PHP client for generating imgproxy URLs, includes Twig Extension for Twig projects (like Craft CMS).",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "Alanrogers\\ImgproxyPhpClient\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Rob Baker",
+            "email": "rob.baker@alanrogers.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.3",
+        "onliner/imgproxy-php": "0.2",
+        "twig/twig": "~3.12.0"
+    }
+}
