@@ -3,7 +3,10 @@
 namespace Alanrogers\ImgproxyPhpClient;
 
 use Alanrogers\ImgproxyPhpClient\exceptions\InvalidOptionException;
+use Craft;
+use craft\elements\Asset;
 use Onliner\ImgProxy\UrlBuilder;
+use yii\base\InvalidConfigException;
 
 class ImageClient
 {
@@ -35,6 +38,7 @@ class ImageClient
 
     // @todo default options?
     // @todo support making a `srcset` attribute
+    // @todo support passing a Craft asset to the `src` param or a different method
 
     /**
      * @param string $src The source URL or path for the image
@@ -45,7 +49,13 @@ class ImageClient
      * @return string
      * @throws InvalidOptionException
      */
-    public static function imageUrl(string $src, array $options, ?string $extension = null, ?bool $encoded=null, ?bool $signed=null): string
+    public static function imageURL(
+        string $src,
+        array $options,
+        ?string $extension = null,
+        ?bool $encoded=null,
+        ?bool $signed=null
+    ): string
     {
         if ($signed === null) {
             $signed = !self::$dev_mode;
@@ -65,5 +75,40 @@ class ImageClient
         }
 
         return $url_builder->url($src, $extension);
+    }
+
+    /**
+     * @param Asset $asset
+     * @param string|null $extension
+     * @param bool|null $encoded
+     * @param bool|null $signed
+     * @return string|null
+     * @throws InvalidOptionException
+     */
+    public static function imageURLFromAsset(
+        Asset $asset,
+        array $options,
+        ?string $extension = null,
+        ?bool $encoded=null,
+        ?bool $signed=null
+    ): ?string
+    {
+        if ($asset->kind !== Asset::KIND_IMAGE && $asset->kind !== Asset::KIND_PDF) {
+            Craft::warning(sprintf('Asset %s is not an image', $asset->id), 'ImageClient');
+            return null; // can't handle non-image assets
+        }
+
+        try {
+            $src = $asset->getUrl();
+        } catch (InvalidConfigException $e) {
+            Craft::error($e->getMessage(), 'ImageClient');
+            return null;
+        }
+
+        if ($src === null) {
+            // @todo use a special URL for retrieval of assets that have no public URL
+        }
+
+        return self::imageURL($src, $options, $extension, $encoded, $signed);
     }
 }
