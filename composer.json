@@ -20,7 +20,11 @@
         "twig/twig": "~3.12.0"
     },
     "require-dev": {
-        "craftcms/cms": "^5.3"
+        "craftcms/cms": "^5.3",
+        "codeception/codeception": "^5.1",
+        "codeception/module-asserts": "*",
+        "codeception/verify": "^3.2",
+        "codeception/assert-throws": "^1.4"
     },
     "config": {
         "allow-plugins": {

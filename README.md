@@ -25,7 +25,7 @@ use Alanrogers\ImgproxyPhpClient\ImageClientFactory;
 $key = getenv('IMGPROXY_KEY');
 $salt = getenv('IMGPROXY_SALT');
 
-ImageClientFactory::setInstance($key, $salt);
+ImageClientFactory::setInstance($key, $salt, true);
 ```
 
 To use the Twig extension:

@@ -10,17 +10,12 @@ use yii\base\InvalidConfigException;
 
 class ImageClient
 {
-    /**
-     * Can be set externally depending on environment
-     * @var bool
-     */
-    public static bool $dev_mode = false;
-
     private ?OptionBuilder $option_builder = null;
 
     public function __construct(
         private readonly string $key='',
-        private readonly string $salt=''
+        private readonly string $salt='',
+        private readonly bool $dev_mode = false
     ) {}
 
     public function getBuilder(bool $signed=true): UrlBuilder
@@ -36,7 +31,7 @@ class ImageClient
         return $this->option_builder;
     }
 
-    // @todo default options?
+
     // @todo support making a `srcset` attribute
     // @todo support passing a Craft asset to the `src` param or a different method
 
@@ -49,7 +44,7 @@ class ImageClient
      * @return string
      * @throws InvalidOptionException
      */
-    public static function imageURL(
+    public function imageURL(
         string $src,
         array $options,
         ?string $extension = null,
@@ -58,10 +53,10 @@ class ImageClient
     ): string
     {
         if ($signed === null) {
-            $signed = !self::$dev_mode;
+            $signed = !$this->dev_mode;
         }
         if ($encoded === null) {
-            $encoded = !self::$dev_mode;
+            $encoded = !$this->dev_mode;
         }
 
         $image_client = ImageClientFactory::getInstance();
@@ -79,13 +74,14 @@ class ImageClient
 
     /**
      * @param Asset $asset
+     * @param array $options
      * @param string|null $extension
      * @param bool|null $encoded
      * @param bool|null $signed
      * @return string|null
      * @throws InvalidOptionException
      */
-    public static function imageURLFromAsset(
+    public function imageURLFromAsset(
         Asset $asset,
         array $options,
         ?string $extension = null,
@@ -109,6 +105,6 @@ class ImageClient
             // @todo use a special URL for retrieval of assets that have no public URL
         }
 
-        return self::imageURL($src, $options, $extension, $encoded, $signed);
+        return $this->imageURL($src, $options, $extension, $encoded, $signed);
     }
 }

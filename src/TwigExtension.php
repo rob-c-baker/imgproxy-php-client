@@ -9,11 +9,16 @@ use Twig\TwigFunction;
 
 class TwigExtension extends AbstractExtension
 {
+    public function __construct(
+        private ImageClient $image_client
+    ) {}
+
+
     #[Override]
     public function getFunctions(): array
     {
         return [
-            new TwigFunction('imageUrl', [ ImageClient::class, 'imageUrl' ]),
+            new TwigFunction('imageUrl', [ $this->image_client, 'imageUrl' ]),
         ];
     }
 
@@ -21,7 +26,7 @@ class TwigExtension extends AbstractExtension
     public function getFilters(): array
     {
         return [
-            new TwigFilter('imageUrl', [ ImageClient::class, 'imageUrl' ]),
+            new TwigFilter('imageUrl', [ $this->image_client, 'imageUrl' ]),
         ];
     }
 }
