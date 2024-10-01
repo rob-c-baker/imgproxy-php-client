@@ -85,30 +85,28 @@ class OptionBuilder
     ];
 
     /**
+     * @var array<AbstractOption>|array
+     */
+    private array $default_options = [];
+
+    /**
      * @var array<AbstractOption>
      */
     private array $options = [];
 
     /**
-     * @var array<AbstractOption>|array
-     */
-    private static array $default_options = [];
-
-    /**
+     * @param array<AbstractOption>|array $defaults
+     * @return void
      * @throws InvalidOptionException
      */
-    public function __construct()
+    public function setDefaults(array $defaults): void
     {
-        $this->addOptions(self::$default_options);
+        $this->addOptions($defaults, true);
     }
 
-    /**
-     * @param array $defaults
-     * @return void
-     */
-    public static function setDefaults(array $defaults): void
+    public function hasDefaults(): bool
     {
-        self::$default_options = $defaults;
+        return !empty($this->default_options);
     }
 
     /**
@@ -124,20 +122,20 @@ class OptionBuilder
      * Makes an array of `AbstractOption` classes from an array of option names and values
      * or an array of `AbstractOption` objects.
      * @param array<AbstractOption>|array $options
+     * @param bool $as_defaults
      * @return OptionBuilder
      * @throws InvalidOptionException
      */
-    public function addOptions(array $options): self
+    public function addOptions(array $options, bool $as_defaults = false): self
     {
         foreach ($options as $key => $data) {
             if (!$this->isValid($key)) {
                 throw new InvalidOptionException(sprintf('Invalid option: %s', $key));
             }
-            if ($data instanceof AbstractOption) {
-                $this->options[] = $data;
-                continue;
+            if (!($data instanceof AbstractOption)) {
+                $data = $this->make($key, $data);
             }
-            $this->options[] = $this->make($key, $data);
+            $as_defaults ? $this->default_options[$key] = $data : $this->options[$key] = $data;
         }
         return $this;
     }
@@ -147,7 +145,29 @@ class OptionBuilder
      */
     public function getOptions(): array
     {
-        return $this->options;
+        // So we lose the keys, but that's okay because we don't want them for the client. We just need them so
+        // merging the arrays here works as we want.
+        return array_values([ ...$this->default_options, ...$this->options ]);
+    }
+
+    public function hasOptions(): bool
+    {
+        return !empty($this->options);
+    }
+
+    /**
+     * @template T
+     * @param class-string<T> $classname
+     * @return T|null
+     */
+    public function getOption(string $classname): ?AbstractOption
+    {
+        foreach ($this->getOptions() as $option) {
+            if ($option instanceof $classname) {
+                return $option;
+            }
+        }
+        return null;
     }
 
     /**
@@ -886,6 +906,8 @@ class OptionBuilder
      * Info:
      *
      * Unlike the dpr option, the zoom option doesn't affect gravities offsets, watermark offsets, and paddings.
+     *
+     * Default: 1
      *
      * @param float $x
      * @param float|null $y

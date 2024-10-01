@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Tests\Unit;
 
@@ -23,13 +23,12 @@ class OptionBuilderTest extends Unit
 
     protected function _before(): void
     {
-        OptionBuilder::setDefaults([]);
         $this->builder = new OptionBuilder();
     }
 
-    public function testDefaults()
+    public function testDefaults(): void
     {
-        OptionBuilder::setDefaults([
+        $this->builder->setDefaults([
             'auto-rotate' => [
                 'rotate' => true
             ],
@@ -38,14 +37,12 @@ class OptionBuilderTest extends Unit
             ],
         ]);
 
-        $this->builder = new OptionBuilder(); // do this again to get the default options populated by the constructor
-
         Verify::Array($this->builder->getOptions())
             ->count(2)
             ->containsOnlyInstancesOf(AbstractOption::class);
     }
 
-    public function testOptionsAreValid()
+    public function testOptionsAreValid(): void
     {
         foreach (array_keys(OptionBuilder::OPTION_MAP) as $option) {
             $this->assertTrue($this->builder->isValid($option));
@@ -54,7 +51,7 @@ class OptionBuilderTest extends Unit
         $this->assertFalse($this->builder->isValid('invalid'));
     }
 
-    public function testMakeOption()
+    public function testMakeOption(): void
     {
         $this->assertInstanceOf(Blur::class, $this->builder->make('blur', [ 'sigma' => 0.3 ]));
 
@@ -67,7 +64,7 @@ class OptionBuilderTest extends Unit
     // Option methods...
 
     // tests
-    public function testAutoRotate()
+    public function testAutoRotate(): void
     {
         $auto_rotate_true = $this->builder->autoRotate(true);
         $auto_rotate_false = $this->builder->autoRotate(false);
@@ -79,7 +76,7 @@ class OptionBuilderTest extends Unit
         Verify::Array($auto_rotate_false->data())->count(1)->containsEquals(0);
     }
 
-    public function testBackground()
+    public function testBackground(): void
     {
         $this->assertThrows(InvalidArgumentException::class, function () {
             $this->builder->background('red');
@@ -93,7 +90,7 @@ class OptionBuilderTest extends Unit
         Verify::Array($bg->data())->count(1)->containsEquals('100:200:255');
     }
 
-    public function testBlur()
+    public function testBlur(): void
     {
         $this->assertInstanceOf(Blur::class, $this->builder->blur(0.3));
 
@@ -102,19 +99,19 @@ class OptionBuilderTest extends Unit
         });
     }
 
-    public function testCacheBuster()
+    public function testCacheBuster(): void
     {
         $result = $this->builder->cacheBuster('some-value');
         $this->assertInstanceOf(CacheBuster::class, $result);
     }
 
-    public function testCrop()
+    public function testCrop(): void
     {
-        $result = $this->builder->crop(300, 200, '1:2');
+        $result = $this->builder->crop(300, 200, 'ce:0:0'); // @todo test more gravities
         $this->assertInstanceOf(Crop::class, $result);
     }
 
-    public function testDpr()
+    public function testDpr(): void
     {
         $result = $this->builder->dpr(2);
         $this->assertInstanceOf(Dpr::class, $result);

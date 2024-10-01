@@ -2,7 +2,9 @@
 
 namespace Alanrogers\ImgproxyPhpClient;
 
+use Alanrogers\ImgproxyPhpClient\exceptions\InvalidKindException;
 use Alanrogers\ImgproxyPhpClient\exceptions\InvalidOptionException;
+use Alanrogers\ImgproxyPhpClient\exceptions\URLException;
 use Craft;
 use craft\elements\Asset;
 use Onliner\ImgProxy\UrlBuilder;
@@ -12,11 +14,20 @@ class ImageClient
 {
     private ?OptionBuilder $option_builder = null;
 
+    /**
+     * @throws URLException
+     */
     public function __construct(
-        private readonly string $key='',
-        private readonly string $salt='',
-        private readonly bool $dev_mode = false
-    ) {}
+        private readonly string $key = '',
+        private readonly string $salt = '',
+        private readonly bool $dev_mode = false,
+        private bool $private_urls = false,
+        private ?string $private_url_pattern = null
+    ) {
+        if ($this->private_urls && !$this->isPrivateURLPatternValid()) {
+            throw new URLException('Private URLs enabled but the pattern is invalid, the pattern must use a valid placeholder.');
+        }
+    }
 
     public function getBuilder(bool $signed=true): UrlBuilder
     {
@@ -31,67 +42,68 @@ class ImageClient
         return $this->option_builder;
     }
 
-
-    // @todo support making a `srcset` attribute
-    // @todo support passing a Craft asset to the `src` param or a different method
-
     /**
      * @param string $src The source URL or path for the image
-     * @param array $options The options for the URL builder
+     * @param array|null $options The options for the URL builder
      * @param string|null $extension If supplied, will convert source image to the format the extension represents.
      * @param bool|null $encoded Whether to encode the URL. Defaults to true if `ImageClient::$dev_mode` is false.
      * @param bool|null $signed Whether to sign the URL. Defaults to true if `ImageClient::$dev_mode` is false.
-     * @return string
+     * @return Image
      * @throws InvalidOptionException
      */
     public function imageURL(
         string $src,
-        array $options,
+        array $options = null,
         ?string $extension = null,
-        ?bool $encoded=null,
-        ?bool $signed=null
-    ): string
+        ?bool $encoded = null,
+        ?bool $signed = null
+    ): Image
     {
-        if ($signed === null) {
-            $signed = !$this->dev_mode;
-        }
         if ($encoded === null) {
             $encoded = !$this->dev_mode;
         }
 
-        $image_client = ImageClientFactory::getInstance();
-        $option_builder = $image_client->getOptionBuilder();
-
-        $url_builder = $image_client->getBuilder($signed)
-            ->with(...$option_builder->makeOptions($options));
-
-        if (!$encoded) {
-            $url_builder->encoded(false)->url($src, $extension);
+        if ($signed === null) {
+            $signed = !$this->dev_mode;
         }
 
-        return $url_builder->url($src, $extension);
+        $option_builder = $this->getOptionBuilder();
+
+        if ($options !== null) {
+            $option_builder->addOptions($options);
+        }
+
+        if (!$option_builder->hasOptions()) {
+            throw new InvalidOptionException('No options specified, at least 1 option must be supplied.');
+        }
+
+        return new Image($this, $option_builder, $src, $extension, $encoded, $signed);
     }
 
     /**
      * @param Asset $asset
-     * @param array $options
+     * @param array|null $options
      * @param string|null $extension
      * @param bool|null $encoded
      * @param bool|null $signed
-     * @return string|null
+     * @return Image|null
      * @throws InvalidOptionException
+     * @throws InvalidKindException
+     * @throws URLException
      */
     public function imageURLFromAsset(
         Asset $asset,
-        array $options,
+        array $options = null,
         ?string $extension = null,
-        ?bool $encoded=null,
-        ?bool $signed=null
-    ): ?string
+        ?bool $encoded = null,
+        ?bool $signed = null
+    ): ?Image
     {
-        if ($asset->kind !== Asset::KIND_IMAGE && $asset->kind !== Asset::KIND_PDF) {
-            Craft::warning(sprintf('Asset %s is not an image', $asset->id), 'ImageClient');
-            return null; // can't handle non-image assets
+        // Note: cannot process PDFs until we have an imgproxy paid licence
+        if ($asset->kind !== Asset::KIND_IMAGE/* && $asset->kind !== Asset::KIND_PDF*/) {
+            throw new InvalidKindException(
+                sprintf('Asset with id "%d" is not an image, it has type "%s".', $asset->id, $asset->kind)
+            );
         }
 
         try {
@@ -102,9 +114,83 @@ class ImageClient
         }
 
         if ($src === null) {
-            // @todo use a special URL for retrieval of assets that have no public URL
+            if ($this->private_urls) {
+                // use a special URL for retrieval of assets that have no public URL
+                $src = str_replace([ '{id}', '{uid}', '{filename}' ], [ $asset->id, $asset->uid, $asset->filename ], $this->private_url_pattern);
+            } else {
+                throw new URLException(sprintf('Asset with id "%d" has no public URL and private URLs are disabled.', $asset->id));
+            }
         }
 
         return $this->imageURL($src, $options, $extension, $encoded, $signed);
+    }
+
+    /**
+     * Produces a number of image URLs defined by multiple arrays of options passed in to `$option_sets`.
+     * This number of image URLs are then returned in a `Srcset` object that can render a `srcset` attribute.
+     * @param Asset|string $src
+     * @param array $option_sets
+     * @param string|null $extension
+     * @param bool|null $encoded
+     * @param bool|null $signed
+     * @return Srcset
+     * @throws InvalidKindException
+     * @throws InvalidOptionException
+     */
+    public function srcset(
+        Asset|string $src,
+        array $option_sets,
+        ?string $extension = null,
+        ?bool $encoded = null,
+        ?bool $signed = null
+    ): Srcset {
+
+        $images = [];
+
+        foreach ($option_sets as $options) {
+            if ($src instanceof Asset) {
+                $images[] = $this->imageURLFromAsset($src, $options, $extension, $encoded, $signed);
+            } else {
+                $images[] = $this->imageURL($src, $options, $extension, $encoded, $signed);
+            }
+        }
+
+        return new Srcset($images);
+    }
+
+    /**
+     * Sets options for the private URL which will be used when an `Asset` has no public URLs so that imgproxy can
+     * download the image.
+     *
+     * @param string $pattern Must be a valid private URL pattern.
+     *
+     * Example: "https://host/actions/private-image/fetch?id={id}"
+     *
+     * Can contain:
+     * - {id} - which will be replaced with the asset ID
+     * - {uid} - which will be replaced with the asset UID
+     * - {filename} - which will be replaced with the asset filename (including extension).
+     *
+     * @return void
+     */
+    public function setPrivateURLOptions(string $pattern): void
+    {
+        $this->private_urls = true;
+        $this->private_url_pattern = $pattern;
+    }
+
+    /**
+     * Prevents use of private URLs to access otherwise inaccessible assets.
+     * @return void
+     */
+    public function disablePrivateURLs(): void
+    {
+        $this->private_urls = false;
+        $this->private_url_pattern = null;
+    }
+
+    private function isPrivateURLPatternValid(): bool
+    {
+        return preg_match('/{id}|{uid}|{filename}/', $this->private_url_pattern) > 0;
     }
 }

@@ -30,7 +30,7 @@ class PrivateURLAction extends Action
     {
         parent::__construct($id, $controller, $config);
 
-        $this->allowed_token = getenv('IMGPROXY_REQUEST_TOKEN');
+        $this->allowed_token = getenv('IMGPROXY_SECRET_TOKEN');
     }
 
     public function run(): Response
@@ -52,9 +52,6 @@ class PrivateURLAction extends Action
 
         // Required params:
         $asset_id = $this->controller->request->getQueryParam('id');
-
-        // @todo Note: use make sure to encrypt the source URL imgproxy uses: https://docs.imgproxy.net/usage/encrypting_source_url
-        // @todo Note: use `IMGPROXY_CUSTOM_REQUEST_HEADERS` to set a `Authorization: Bearer %token%` header
 
         // Optional params:
         $width = $this->controller->request->getQueryParam('w');
@@ -88,6 +85,9 @@ class PrivateURLAction extends Action
 
     private function getErrorImage(string $message=null, int $width=null, int $height=null): ?string
     {
+        if ($message === null) {
+            $message = 'Image Error';
+        }
         $data = $this->getCachedImage($message, $width, $height);
         if ($data !== null) {
             return $data;
@@ -128,13 +128,13 @@ class PrivateURLAction extends Action
         return $data;
     }
 
-    private function getCachedImage(string $message=null, int $width=null, int $height=null): ?string
+    private function getCachedImage(string $message, int $width=null, int $height=null): ?string
     {
-        $cache_key = md5(
-            ($message ?? '') .
-            ($width ?? self::DEFAULT_ERROR_IMAGE_WIDTH) .
-            ($height ?? self::DEFAULT_ERROR_IMAGE_HEIGHT)
-        );
+        $cache_key = implode('-', [
+            md5($message),
+            $width ?? self::DEFAULT_ERROR_IMAGE_WIDTH,
+            $height ?? self::DEFAULT_ERROR_IMAGE_HEIGHT
+        ]);
 
         if (Craft::$app->getCache()->exists($cache_key)) {
             return Craft::$app->getCache()->get($cache_key);
