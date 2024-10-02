@@ -133,9 +133,11 @@ class OptionBuilder
                 throw new InvalidOptionException(sprintf('Invalid option: %s', $key));
             }
             if (!($data instanceof AbstractOption)) {
-                $data = $this->make($key, $data);
+                $option = $this->make($key, is_array($data) ? $data : [ $data ]);
+            } else {
+                $option = $data;
             }
-            $as_defaults ? $this->default_options[$key] = $data : $this->options[$key] = $data;
+            $as_defaults ? $this->default_options[$key] = $option : $this->options[$key] = $option;
         }
         return $this;
     }

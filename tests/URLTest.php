@@ -2,6 +2,8 @@
 
 namespace Tests\Unit;
 
+use Alanrogers\ImgproxyPhpClient\exceptions\InvalidOptionException;
+use Alanrogers\ImgproxyPhpClient\exceptions\URLException;
 use Alanrogers\ImgproxyPhpClient\ImageClient;
 use Alanrogers\ImgproxyPhpClient\ImageClientFactory;
 use Codeception\AssertThrows;
@@ -21,6 +23,10 @@ class URLTest extends Unit
 
     }
 
+    /**
+     * @throws InvalidOptionException
+     * @throws URLException
+     */
     public function testFactory(): void
     {
         $this->client = ImageClientFactory::getInstance(
@@ -32,22 +38,27 @@ class URLTest extends Unit
 
     }
 
-    public function testURL(): void
+    public function testInsecureURLWithArrayOptions(): void
     {
         $this->client = new ImageClient(
             self::KEY,
             self::SALT,
-            true
+            endpoint: 'https://media.alanrogers.com/-',
+            dev_mode: true
         );
 
-        $url = $this->client->imageURL(
+        $image = $this->client->image(
             'https://static.alanrogers.com/assets/images/icons/apple-touch-icon.png',
-            [],
+            [ 'raw' => true ],
             'png',
             false,
             false
         );
-        codecept_debug($url);
+
+        $this->assertEquals(
+            'https://media.alanrogers.com/-/insecure/raw:1/plain/https://static.alanrogers.com/assets/images/icons/apple-touch-icon.png',
+            $image->getURL()
+        );
 
     }
 }

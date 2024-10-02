@@ -3,9 +3,8 @@
 namespace Alanrogers\ImgproxyPhpClient;
 
 use Alanrogers\ImgproxyPhpClient\exceptions\InvalidOptionException;
-use Alanrogers\ImgproxyPhpClient\exceptions\InvalidParameters;
+use Alanrogers\ImgproxyPhpClient\exceptions\InvalidParametersException;
 use Alanrogers\ImgproxyPhpClient\exceptions\URLException;
-use Craft;
 use Onliner\ImgProxy\Options\AbstractOption;
 
 class ImageClientFactory
@@ -16,24 +15,27 @@ class ImageClientFactory
      * @param string|null $key
      * @param string|null $salt
      * @param array<AbstractOption>|array $defaults
-     * @param bool $register_twig_ext
+     * @param string $endpoint
      * @param bool $dev_mode
+     * @param string|null $private_url_pattern
      * @return ImageClient
      * @throws InvalidOptionException
      * @throws URLException
+     * @throws InvalidParametersException
      */
     public static function getInstance(
         ?string $key = null,
         ?string $salt = null,
         array $defaults = [],
-        bool $register_twig_ext = false,
-        bool $dev_mode = false
+        string $endpoint = ImageClient::DEFAULT_ENDPOINT,
+        bool $dev_mode = false,
+        ?string $private_url_pattern = null
     ): ImageClient {
         if (self::$instance === null) {
             if ($key === null || $salt === null) {
-                throw new InvalidParameters('`ImageClientFactory::getInstance()` or `ImageClientFactory::settInstance()` must be first called with `key` and `salt` parameters.');
+                throw new InvalidParametersException('`ImageClientFactory::getInstance()` or `ImageClientFactory::settInstance()` must be first called with `key` and `salt` parameters.');
             }
-            self::setInstance($key, $salt, $defaults, $register_twig_ext, $dev_mode);
+            self::setInstance($key, $salt, $defaults, $endpoint, $dev_mode, $private_url_pattern);
         }
         return self::$instance;
     }
@@ -42,22 +44,23 @@ class ImageClientFactory
      * @param string $key
      * @param string $salt
      * @param array<AbstractOption>|array $defaults
-     * @param bool $register_twig_ext
+     * @param string $endpoint
      * @param bool $dev_mode
+     * @param string|null $private_url_pattern
      * @return void
-     * @throws URLException|InvalidOptionException
+     * @throws InvalidOptionException
+     * @throws URLException
      */
     public static function setInstance(
         string $key,
         string $salt,
         array $defaults = [],
-        bool $register_twig_ext = false,
-        bool $dev_mode = false
+        string $endpoint = ImageClient::DEFAULT_ENDPOINT,
+        bool $dev_mode = false,
+        ?string $private_url_pattern = null
     ): void {
-        self::$instance = new ImageClient($key, $salt, $dev_mode);
+
+        self::$instance = new ImageClient($key, $salt, $endpoint, $dev_mode, $private_url_pattern);
         $defaults ?: self::$instance->getOptionBuilder()->setDefaults($defaults);
-        if ($register_twig_ext) {
-            Craft::$app->getView()->registerTwigExtension(new TwigExtension(self::$instance));
-        }
     }
 }

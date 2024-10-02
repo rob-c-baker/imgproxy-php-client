@@ -30,14 +30,20 @@ readonly class Image
             $url_builder = $url_builder->encoded($this->encoded);
         }
 
+        $url_builder = $url_builder->with(...$this->option_builder->getOptions());
+
         try {
-            return $url_builder->url(
+            $url = $url_builder->url(
                 $this->src instanceof Asset ? $this->src->getUrl() : $this->src,
                 $this->extension
             );
         } catch (InvalidConfigException $e) {
             throw new URLException('Could not get URL from source.', (int) $e->getCode(), $e);
         }
+
+        $endpoint = $this->image_client->getEndpoint();
+
+        return $endpoint ? $endpoint . $url : $url;
     }
 
     public function getSrc(): string|Asset

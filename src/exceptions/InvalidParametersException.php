@@ -2,9 +2,7 @@
 
 namespace Alanrogers\ImgproxyPhpClient\exceptions;
 
-use InvalidArgumentException;
-
-class InvalidParameters extends InvalidArgumentException
+class InvalidParametersException extends ClientException
 {
 
 }

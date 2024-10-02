@@ -2,9 +2,7 @@
 
 namespace Alanrogers\ImgproxyPhpClient\exceptions;
 
-use Exception;
-
-class URLException extends Exception
+class URLException extends ClientException
 {
 
 }

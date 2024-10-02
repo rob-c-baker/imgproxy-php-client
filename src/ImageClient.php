@@ -12,6 +12,7 @@ use yii\base\InvalidConfigException;
 
 class ImageClient
 {
+    public const string DEFAULT_ENDPOINT = 'http://localhost:8080';
     private ?OptionBuilder $option_builder = null;
 
     /**
@@ -20,12 +21,12 @@ class ImageClient
     public function __construct(
         private readonly string $key = '',
         private readonly string $salt = '',
+        private readonly string $endpoint = self::DEFAULT_ENDPOINT,
         private readonly bool $dev_mode = false,
-        private bool $private_urls = false,
         private ?string $private_url_pattern = null
     ) {
-        if ($this->private_urls && !$this->isPrivateURLPatternValid()) {
-            throw new URLException('Private URLs enabled but the pattern is invalid, the pattern must use a valid placeholder.');
+        if ($this->private_url_pattern !== null && !$this->isPrivateURLPatternValid()) {
+            throw new URLException('Private URL pattern must use at least 1 valid placeholder.');
         }
     }
 
@@ -42,6 +43,11 @@ class ImageClient
         return $this->option_builder;
     }
 
+    public function getEndpoint(): string
+    {
+        return $this->endpoint;
+    }
+
     /**
      * @param string $src The source URL or path for the image
      * @param array|null $options The options for the URL builder
@@ -51,7 +57,7 @@ class ImageClient
      * @return Image
      * @throws InvalidOptionException
      */
-    public function imageURL(
+    public function image(
         string $src,
         array $options = null,
         ?string $extension = null,
@@ -91,7 +97,7 @@ class ImageClient
      * @throws InvalidKindException
      * @throws URLException
      */
-    public function imageURLFromAsset(
+    public function imageFromAsset(
         Asset $asset,
         array $options = null,
         ?string $extension = null,
@@ -114,7 +120,7 @@ class ImageClient
         }
 
         if ($src === null) {
-            if ($this->private_urls) {
+            if ($this->private_url_pattern) {
                 // use a special URL for retrieval of assets that have no public URL
                 $src = str_replace([ '{id}', '{uid}', '{filename}' ], [ $asset->id, $asset->uid, $asset->filename ], $this->private_url_pattern);
             } else {
@@ -122,7 +128,7 @@ class ImageClient
             }
         }
 
-        return $this->imageURL($src, $options, $extension, $encoded, $signed);
+        return $this->image($src, $options, $extension, $encoded, $signed);
     }
 
     /**
@@ -136,6 +142,7 @@ class ImageClient
      * @return Srcset
      * @throws InvalidKindException
      * @throws InvalidOptionException
+     * @throws URLException
      */
     public function srcset(
         Asset|string $src,
@@ -149,9 +156,9 @@ class ImageClient
 
         foreach ($option_sets as $options) {
             if ($src instanceof Asset) {
-                $images[] = $this->imageURLFromAsset($src, $options, $extension, $encoded, $signed);
+                $images[] = $this->imageFromAsset($src, $options, $extension, $encoded, $signed);
             } else {
-                $images[] = $this->imageURL($src, $options, $extension, $encoded, $signed);
+                $images[] = $this->image($src, $options, $extension, $encoded, $signed);
             }
         }
 
@@ -175,7 +182,6 @@ class ImageClient
      */
     public function setPrivateURLOptions(string $pattern): void
     {
-        $this->private_urls = true;
         $this->private_url_pattern = $pattern;
     }
 
@@ -185,7 +191,6 @@ class ImageClient
      */
     public function disablePrivateURLs(): void
     {
-        $this->private_urls = false;
         $this->private_url_pattern = null;
     }
 

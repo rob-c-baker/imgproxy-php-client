@@ -2,9 +2,7 @@
 
 namespace Alanrogers\ImgproxyPhpClient\exceptions;
 
-use Exception;
-
-class InvalidKindException extends Exception
+class InvalidKindException extends ClientException
 {
 
 }

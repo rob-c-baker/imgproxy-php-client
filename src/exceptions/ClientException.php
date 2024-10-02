@@ -2,7 +2,9 @@
 
 namespace Alanrogers\ImgproxyPhpClient\exceptions;
 
-class InvalidOptionException extends ClientException
+use Exception;
+
+class ClientException extends Exception
 {
 
 }
