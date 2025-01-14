@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace Alanrogers\ImgproxyPhpClient;
+namespace ImgproxyPhpClient;
 
-use Alanrogers\ImgproxyPhpClient\exceptions\InvalidKindException;
-use Alanrogers\ImgproxyPhpClient\exceptions\InvalidOptionException;
-use Alanrogers\ImgproxyPhpClient\exceptions\URLException;
+use ImgproxyPhpClient\exceptions\InvalidKindException;
+use ImgproxyPhpClient\exceptions\InvalidOptionException;
+use ImgproxyPhpClient\exceptions\URLException;
 use Craft;
 use craft\elements\Asset;
 use Onliner\ImgProxy\UrlBuilder;

@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace Alanrogers\ImgproxyPhpClient;
+namespace ImgproxyPhpClient;
 
-use Alanrogers\ImgproxyPhpClient\exceptions\URLException;
+use ImgproxyPhpClient\exceptions\URLException;
 use craft\elements\Asset;
 use Onliner\ImgProxy\Options\Height;
 use Onliner\ImgProxy\Options\Width;

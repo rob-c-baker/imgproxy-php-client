@@ -1,10 +1,10 @@
 <?php declare(strict_types=1);
 
-namespace Alanrogers\ImgproxyPhpClient;
+namespace ImgproxyPhpClient;
 
-use Alanrogers\ImgproxyPhpClient\exceptions\InvalidOptionException;
-use Alanrogers\ImgproxyPhpClient\exceptions\InvalidParametersException;
-use Alanrogers\ImgproxyPhpClient\exceptions\URLException;
+use ImgproxyPhpClient\exceptions\InvalidOptionException;
+use ImgproxyPhpClient\exceptions\InvalidParametersException;
+use ImgproxyPhpClient\exceptions\URLException;
 use Onliner\ImgProxy\Options\AbstractOption;
 
 class ImageClientFactory

@@ -1,8 +1,8 @@
 <?php declare(strict_types=1);
 
-namespace Alanrogers\ImgproxyPhpClient;
+namespace ImgproxyPhpClient;
 
-use Alanrogers\ImgproxyPhpClient\exceptions\InvalidOptionException;
+use ImgproxyPhpClient\exceptions\InvalidOptionException;
 use Onliner\ImgProxy\Options\AbstractOption;
 use Onliner\ImgProxy\Options\AutoRotate;
 use Onliner\ImgProxy\Options\Background;
